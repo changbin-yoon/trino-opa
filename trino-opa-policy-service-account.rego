@@ -6,36 +6,30 @@ default allow = false
 # ============================================
 # 서비스 계정 정의
 # ============================================
-# 서비스 계정을 구분하는 방법:
-# 1. LDAP 그룹으로 구분 (예: "service-accounts" 그룹에 속한 사용자)
-# 2. 사용자 이름 패턴으로 구분 (예: svc-*, service-*로 시작하는 사용자)
+# 서비스 계정 목록 (명시적으로 정의된 5개 계정)
+# 실제 환경에서는 실제 서비스 계정 이름으로 변경해야 합니다
+service_accounts = [
+    "svc-trino-reader",
+    "svc-trino-writer",
+    "svc-analytics",
+    "svc-etl",
+    "svc-monitoring"
+]
 
-# 서비스 계정 LDAP 그룹 목록
+# 서비스 계정 LDAP 그룹 목록 (선택사항)
+# 서비스 계정이 특정 LDAP 그룹에 속해 있다면 사용 가능
 service_account_groups = [
     "service-accounts",
     "svc-accounts",
     "trino-service-accounts"
 ]
 
-# 서비스 계정 사용자 이름 패턴 (정규식 대신 prefix/suffix 사용)
-service_account_prefixes = [
-    "svc-",
-    "service-",
-    "trino-svc-"
-]
-
-# 서비스 계정 사용자 이름 suffix
-service_account_suffixes = [
-    "-svc",
-    "-service"
-]
-
 # ============================================
-# Kubernetes 환경 IP 대역 정의
+# Kubernetes 클러스터 CIDR 정의
 # ============================================
-# Kubernetes 클러스터 내부 IP 대역
-# 실제 환경에서는 실제 Kubernetes 클러스터 IP 대역으로 변경해야 합니다
-kubernetes_ip_ranges = [
+# Kubernetes 클러스터 내부 IP 대역 (CIDR 형식)
+# 실제 환경에서는 실제 Kubernetes 클러스터 CIDR로 변경해야 합니다
+kubernetes_cluster_cidrs = [
     "10.0.0.0/8",        # Kubernetes 기본 서비스 네트워크
     "172.16.0.0/12",     # Kubernetes Pod 네트워크 (일부 환경)
     "192.168.0.0/16"     # Kubernetes Pod 네트워크 (일부 환경)
@@ -71,21 +65,16 @@ team_catalog_schemas = {
 # ============================================
 # 헬퍼 함수: 서비스 계정인지 확인
 # ============================================
-# 방법 1: LDAP 그룹으로 확인
+# 명시적으로 정의된 서비스 계정 목록에서 확인
+is_service_account {
+    username := input.context.identity.user
+    service_accounts[_] == username
+}
+
+# 또는 LDAP 그룹으로 확인 (선택사항)
 is_service_account {
     user_group := input.context.identity.groups[_]
     service_account_groups[_] == user_group
-}
-
-# 방법 2: 사용자 이름 패턴으로 확인
-is_service_account {
-    username := input.context.identity.user
-    startswith(username, service_account_prefixes[_])
-}
-
-is_service_account {
-    username := input.context.identity.user
-    endswith(username, service_account_suffixes[_])
 }
 
 # ============================================
@@ -97,41 +86,110 @@ is_regular_user {
 }
 
 # ============================================
+# 헬퍼 함수: IP 주소가 Kubernetes 클러스터 CIDR에 속하는지 확인
+# ============================================
+# IP 주소가 Kubernetes 클러스터 CIDR 중 하나에 속하는지 확인
+# OPA의 net.cidr_contains 함수 사용 (OPA 0.20.0 이상 권장)
+# 만약 net.cidr_contains가 작동하지 않으면 아래의 prefix 매칭 방법 사용
+
+# 방법 1: net.cidr_contains 사용 (정확한 CIDR 체크, 권장)
+ip_in_cluster_cidr(client_ip) {
+    cidr := kubernetes_cluster_cidrs[_]
+    net.cidr_contains(cidr, client_ip)
+}
+
+# 방법 2: 간단한 prefix 매칭 (대체 방법, net.cidr_contains가 작동하지 않을 때 사용)
+# 10.0.0.0/8 체크
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "10.")
+}
+
+# 172.16.0.0/12 체크 (172.16. ~ 172.31.)
+# 주의: 이 방법은 정확하지 않을 수 있으므로 net.cidr_contains 사용 권장
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.16.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.17.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.18.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.19.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.20.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.21.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.22.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.23.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.24.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.25.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.26.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.27.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.28.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.29.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.30.")
+}
+
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "172.31.")
+}
+
+# 192.168.0.0/16 체크
+ip_in_cluster_cidr(client_ip) {
+    startswith(client_ip, "192.168.")
+}
+
+# ============================================
 # 헬퍼 함수: Kubernetes 환경에서 접근하는지 확인
 # ============================================
-# IP 주소가 Kubernetes IP 대역에 있는지 확인
+# IP 주소가 Kubernetes 클러스터 CIDR에 속하는지 확인
 # 주의: IP 정보가 input에 포함되어야 함
 # 가능한 위치: input.context.source.ip, input.context.client.ip 등
 is_kubernetes_environment {
     client_ip := input.context.source.ip
-    # 간단한 prefix 매칭 (실제로는 CIDR 체크 필요)
-    startswith(client_ip, "10.")
-}
-
-is_kubernetes_environment {
-    client_ip := input.context.source.ip
-    startswith(client_ip, "172.16.")
-}
-
-is_kubernetes_environment {
-    client_ip := input.context.source.ip
-    startswith(client_ip, "192.168.")
+    ip_in_cluster_cidr(client_ip)
 }
 
 # 대체 위치에서 IP 확인
 is_kubernetes_environment {
     client_ip := input.context.client.ip
-    startswith(client_ip, "10.")
-}
-
-is_kubernetes_environment {
-    client_ip := input.context.client.ip
-    startswith(client_ip, "172.16.")
-}
-
-is_kubernetes_environment {
-    client_ip := input.context.client.ip
-    startswith(client_ip, "192.168.")
+    ip_in_cluster_cidr(client_ip)
 }
 
 # 세션 속성으로 Kubernetes 환경 확인 (Trino 세션 속성 사용 시)
@@ -145,19 +203,12 @@ is_kubernetes_environment {
 # 규칙 1: 서비스 계정은 Kubernetes 환경에서만 접근 허용
 # 규칙 2: 일반 사용자가 서비스 계정을 사용하려고 하면 차단
 
-# 일반 사용자가 서비스 계정을 사용하려고 하는 경우 차단
-# (서비스 계정 그룹에 속하지 않은 사용자가 서비스 계정 이름으로 접근 시도)
-deny_service_account_usage {
-    is_regular_user
-    # 사용자가 서비스 계정 이름 패턴을 사용하려고 하는지 확인
-    username := input.context.identity.user
-    startswith(username, service_account_prefixes[_])
-}
-
+# 일반 사용자가 서비스 계정 이름을 사용하려고 하는 경우 차단
+# (명시적으로 정의된 서비스 계정 목록에 있는 사용자 이름을 일반 사용자가 사용하는 경우)
 deny_service_account_usage {
     is_regular_user
     username := input.context.identity.user
-    endswith(username, service_account_suffixes[_])
+    service_accounts[_] == username
 }
 
 # 서비스 계정이 Kubernetes 환경이 아닌 곳에서 접근하는 경우 차단
