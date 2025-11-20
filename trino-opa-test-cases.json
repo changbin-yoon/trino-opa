@@ -1,0 +1,161 @@
+{
+  "test_cases": [
+    {
+      "name": "team-a 사용자가 hive.team_a_schema 접근 허용",
+      "input": {
+        "context": {
+          "identity": {
+            "user": "alice",
+            "groups": ["team-a", "developers"],
+            "principal": "alice@example.com"
+          },
+          "queryId": "20231115_123456_00001_abcde",
+          "trinoVersion": "450"
+        },
+        "action": {
+          "type": "SchemaAccessControl",
+          "catalog": "hive",
+          "schema": {
+            "catalog": "hive",
+            "schema": "team_a_schema"
+          }
+        }
+      },
+      "expected": {
+        "allow": true
+      }
+    },
+    {
+      "name": "team-a 사용자가 hive.team_b_schema 접근 거부",
+      "input": {
+        "context": {
+          "identity": {
+            "user": "alice",
+            "groups": ["team-a"],
+            "principal": "alice@example.com"
+          }
+        },
+        "action": {
+          "type": "SchemaAccessControl",
+          "catalog": "hive",
+          "schema": {
+            "catalog": "hive",
+            "schema": "team_b_schema"
+          }
+        }
+      },
+      "expected": {
+        "allow": false
+      }
+    },
+    {
+      "name": "team-b 사용자가 iceberg.team_b_schema 접근 허용",
+      "input": {
+        "context": {
+          "identity": {
+            "user": "bob",
+            "groups": ["team-b"],
+            "principal": "bob@example.com"
+          }
+        },
+        "action": {
+          "type": "SchemaAccessControl",
+          "catalog": "iceberg",
+          "schema": {
+            "catalog": "iceberg",
+            "schema": "team_b_schema"
+          }
+        }
+      },
+      "expected": {
+        "allow": true
+      }
+    },
+    {
+      "name": "team-a 사용자가 team_shared_schema 접근 허용 (공유 스키마)",
+      "input": {
+        "context": {
+          "identity": {
+            "user": "alice",
+            "groups": ["team-a"]
+          }
+        },
+        "action": {
+          "type": "SchemaAccessControl",
+          "catalog": "hive",
+          "schema": {
+            "catalog": "hive",
+            "schema": "team_shared_schema"
+          }
+        }
+      },
+      "expected": {
+        "allow": true
+      }
+    },
+    {
+      "name": "admin 그룹 사용자가 모든 스키마 접근 허용",
+      "input": {
+        "context": {
+          "identity": {
+            "user": "admin",
+            "groups": ["admin", "administrators"]
+          }
+        },
+        "action": {
+          "type": "SchemaAccessControl",
+          "catalog": "hive",
+          "schema": {
+            "catalog": "hive",
+            "schema": "any_schema"
+          }
+        }
+      },
+      "expected": {
+        "allow": true
+      }
+    },
+    {
+      "name": "테이블 접근 제어 - team-a가 team_a_schema의 테이블 접근 허용",
+      "input": {
+        "context": {
+          "identity": {
+            "user": "alice",
+            "groups": ["team-a"]
+          }
+        },
+        "action": {
+          "type": "TableAccessControl",
+          "catalog": "hive",
+          "table": {
+            "catalog": "hive",
+            "schema": "team_a_schema",
+            "table": "users"
+          }
+        }
+      },
+      "expected": {
+        "allow": true
+      }
+    },
+    {
+      "name": "카탈로그 접근 제어 - hive 카탈로그 접근 허용",
+      "input": {
+        "context": {
+          "identity": {
+            "user": "alice",
+            "groups": ["team-a"]
+          }
+        },
+        "action": {
+          "type": "CatalogAccessControl",
+          "catalog": "hive"
+        }
+      },
+      "expected": {
+        "allow": true
+      }
+    }
+  ]
+}
+
